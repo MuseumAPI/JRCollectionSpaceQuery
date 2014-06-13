@@ -28,6 +28,7 @@ package org.jasper.collectionspace.smk.datasource;
  */
 
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -227,19 +228,26 @@ public class JsonCSDataSource implements JRDataSource {
 			{
 				try {
 					if (valueClass.equals(String.class)) {
-						value = selectedObject.getValueAsText();
+						value = selectedObject.asText();
 						
 					} else if (valueClass.equals(Boolean.class)) {
 						value = selectedObject.getBooleanValue();
 						
 					} else if (Number.class.isAssignableFrom(valueClass)) {
-							value = convertStringValue(selectedObject.getValueAsText(), valueClass);
+							value = convertStringValue(selectedObject.asText(), valueClass);
 							
 					}
 					else if (Date.class.isAssignableFrom(valueClass)) {
-							value = convertStringValue(selectedObject.getValueAsText(), valueClass);
+							value = convertStringValue(selectedObject.asText(), valueClass);
 							
-					} else {
+					}
+					else if (valueClass.equals(InputStream.class)) {
+                        
+                        String str = selectedObject.toString();
+                        InputStream is =  new ByteArrayInputStream(str.getBytes());
+                        value = is;                                                                   
+					}					
+					else {
 						throw new JRException("Field '" + jrField.getName() + "' is of class '" + valueClass.getName() + "' and cannot be converted");
 					}
 				} catch (Exception e) {
