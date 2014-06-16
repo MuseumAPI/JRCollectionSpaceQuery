@@ -228,30 +228,29 @@ public class JsonCSDataSource implements JRDataSource {
 			{
 				try {
 					if (valueClass.equals(String.class)) {
-						value = selectedObject.asText();
+						value = selectedObject.getValueAsText();
 						
 					} else if (valueClass.equals(Boolean.class)) {
 						value = selectedObject.getBooleanValue();
 						
 					} else if (Number.class.isAssignableFrom(valueClass)) {
-							value = convertStringValue(selectedObject.asText(), valueClass);
+							value = convertStringValue(selectedObject.getValueAsText(), valueClass);
 							
 					}
 					else if (Date.class.isAssignableFrom(valueClass)) {
-							value = convertStringValue(selectedObject.asText(), valueClass);
+							value = convertStringValue(selectedObject.getValueAsText(), valueClass);
 							
-					}
-					else if (valueClass.equals(InputStream.class)) {
-                        
-                        String str = selectedObject.toString();
-                        InputStream is =  new ByteArrayInputStream(str.getBytes());
-                        value = is;                                                                   
-					}					
-					else {
+					}else if (valueClass.equals(InputStream.class)) {
+
+					    String str = selectedObject.toString();
+					    InputStream is =  new ByteArrayInputStream(str.getBytes());
+					    value = is;
+					 }
+					 else {
 						throw new JRException("Field '" + jrField.getName() + "' is of class '" + valueClass.getName() + "' and cannot be converted");
 					}
 				} catch (Exception e) {
-					throw new JRException("Unable to get value for field '" + jrField.getName() + "' of class '" + valueClass.getName() + "'", e);
+					throw new JRException("Unable to get value for field (pourquoi???)'" + jrField.getName() + "' of class '" + valueClass.getName() + "'", e);
 				}
 			}
 		}
