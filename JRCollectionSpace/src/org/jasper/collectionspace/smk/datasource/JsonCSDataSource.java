@@ -36,8 +36,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import net.sf.jasperreports.engine.JRException;
@@ -47,11 +49,13 @@ import net.sf.jasperreports.engine.data.JRAbstractTextDataSource;
 import net.sf.jasperreports.engine.util.JsonUtil;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
+import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.type.TypeReference;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -112,6 +116,10 @@ public class JsonCSDataSource implements JRDataSource {
 	
 	public JsonCSDataSource(InputStream jsonStream, String selectExpression) throws JRException {
 		try {
+			System.out.println(jsonStream);
+			if (jsonStream == null)
+				return;
+			
 			this.jsonStream = jsonStream;
 			this.mapper = new ObjectMapper();
 			
@@ -165,7 +173,7 @@ public class JsonCSDataSource implements JRDataSource {
 		currentJsonNode = null;
 		JsonNode result = getJsonData(jsonTree, selectExpression);
 		if (result != null && result.isObject()) {
-//			System.out.println("result is object");
+			//System.out.println("result is object");
 			final List<JsonNode> list = new ArrayList<JsonNode>();
 			list.add(result);
 			jsonNodesIterator = new Iterator<JsonNode>() {
@@ -183,8 +191,7 @@ public class JsonCSDataSource implements JRDataSource {
 					return count < list.size()-1;
 				}
 			};
-		} else if (result != null && result.isArray()) {
-//			System.out.println("result is array");
+		} else if (result != null && result.isArray()) {		
 			jsonNodesIterator = result.getElements();
 		}
 	}
@@ -195,10 +202,10 @@ public class JsonCSDataSource implements JRDataSource {
 	 * @see net.sf.jasperreports.engine.JRDataSource#next()
 	 */
 	public boolean next() {
-		if(jsonNodesIterator == null || !jsonNodesIterator.hasNext()) {
+		if(jsonNodesIterator == null || !jsonNodesIterator.hasNext()) {			
 			return false;
 		}
-		currentJsonNode = jsonNodesIterator.next();
+		currentJsonNode = jsonNodesIterator.next();		
 		return true;
 	}
 
@@ -209,12 +216,26 @@ public class JsonCSDataSource implements JRDataSource {
 	 */
 	public Object getFieldValue(JRField jrField) throws JRException 
 	{
-		if(currentJsonNode == null) {
+		if(currentJsonNode == null) {			
 			return null;
-		}
+		}		
+		
 		String expression = jrField.getDescription();
+		// if we got a json string, it must be converted to Jackson object and copied to currentJsonNode
+		if(currentJsonNode.getTextValue() instanceof String){					 
+			try {		 				
+				ObjectMapper mapper = new ObjectMapper();
+				JsonFactory factory = mapper.getJsonFactory(); // since 2.1 use mapper.getFactory() instead
+				JsonParser jp = factory.createJsonParser(currentJsonNode.getTextValue());
+				currentJsonNode = mapper.readTree(jp);
+		 
+			} catch (Exception e) {
+				e.printStackTrace();
+			}						
+		}				
+		
 		if (expression == null || expression.length() == 0)
-		{
+		{			
 			return null;
 		}
 		Object value = null;
@@ -250,15 +271,12 @@ public class JsonCSDataSource implements JRDataSource {
 						throw new JRException("Field '" + jrField.getName() + "' is of class '" + valueClass.getName() + "' and cannot be converted");
 					}
 				} catch (Exception e) {
-					throw new JRException("Unable to get value for field (pourquoi???)'" + jrField.getName() + "' of class '" + valueClass.getName() + "'", e);
+					throw new JRException("Unable to get value for field '" + jrField.getName() + "' of class '" + valueClass.getName() + "'", e);
 				}
 			}
 		}
-		else
-		{
-			value = selectedObject;
-		}
-		
+
+		//System.out.println("getFieldValue: value = " + value);
 		return value;
 	}
 	
